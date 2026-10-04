@@ -1,0 +1,227 @@
+%include "io64.inc"
+
+default rel
+
+extern GetStdHandle
+extern WriteFile
+extern ExitProcess
+
+section .data
+number dq 49
+mastercard dq 50
+
+odd db 'Odd number, ', 0
+msg_len3 equ $ -odd
+
+even db 'Even number, ', 0
+msg_len4 equ $ -even
+
+nmcmsg db 'Access Denied ', 0
+msg_len2 equ $ -nmcmsg
+
+mcmsg db 'Access Granted ', 0
+
+oddstor db 'is odd',
+
+
+
+
+msg_len equ $ -mcmsg
+
+newvalueodd dq 0
+newvalueeven dq 0
+newvaluehigh dq 0
+newvalueequal dq 0
+newvaluelow dq 0
+
+foroddparity dq 0
+forevenparity dq 0
+forhighvalue dq 0
+forequalvalue dq 0
+forlowvalue dq 0
+
+oddparitycomparison db 5
+evenparitycomparison db 5
+highvaluecomparison db 10
+equalvaluecomparison db 10
+lowvaluecomparison db  10
+
+valuecomparison db 50
+
+section .bss
+bytes_written resq 1
+
+
+
+
+
+section .text
+global main
+main: 
+
+        sub rsp, 40
+
+    mov rax, [number]
+    and rax, 1
+    jz .even
+    jmp .odd
+    
+    ;----------------------------
+    
+        ;PARITY[
+        cmp rax, [mastercard]
+        and rax, 1
+        jz .odd
+        jmp .even
+        
+        .odd:
+        mov ecx, -11
+        call GetStdHandle
+        mov rbx, rax
+        mov rcx, rbx
+        lea rdx, [odd]
+        mov r8, msg_len3
+        lea r9, [bytes_written]
+        mov qword [rsp + 32], 0
+        call WriteFile
+        mov rax, 11
+        jmp .oddstor
+        
+        .even:
+        mov ecx, -11
+        call GetStdHandle
+        mov rbx, rax
+        mov rcx, rbx
+        lea rdx, [even]
+        mov r8, msg_len4
+        lea r9, [bytes_written]
+        mov qword [rsp + 32], 0
+        call WriteFile
+        mov rax, 22
+        jmp .evenstor ;]
+        
+        ;-------------------------
+        
+        
+        ;ODD OR EVEN STORE[
+        
+        .oddstor:
+        mov [newvalueodd], rax
+        PRINT_DEC 8, rax
+        jmp .VALUECHECKER
+        
+
+     
+        
+        .evenstor:
+        mov [newvalueeven], rax
+         PRINT_DEC 8, rax
+        jmp .VALUECHECKER ;]
+       
+        
+      ;------------------------------  
+        
+        ;VALUE[
+        .VALUECHECKER:
+        mov rax, [number]
+        cmp rax, [mastercard]
+        jg .High
+        je .Equal
+        jmp .Low ;]
+        
+        
+        .High:
+            mov rax, 100
+            mov [newvaluehigh], rax
+            PRINT_DEC 8, [newvaluehigh]
+            jmp .CriteriaGiver
+            
+    
+        
+        .Equal:
+            mov rax, 50
+            mov [newvalueequal], rax
+        PRINT_DEC 8, [newvalueequal]
+            jmp .CriteriaGiver
+       
+        
+        
+        
+        .Low:
+            mov rax, 0
+            mov [newvaluelow], rax
+        PRINT_DEC 8, [newvaluelow]
+        jmp .CriteriaGiver
+        
+   ;-----------------------
+    
+   ;CriteriaGiver
+   
+   .CriteriaGiver:
+   jmp .oddgiver
+   
+   .oddgiver:
+   mov rbx, 4
+   mov [foroddparity], rbx
+   PRINT_DEC 8, [foroddparity]
+   jmp .Criteria
+   .evengiver:
+   mov rbx, 6
+   mov [forevenparity], rbx
+   jmp .Criteria
+   .highgiver:
+   mov rbx, 15
+   mov [forhighparity], rbx
+   jmp .Criteria
+   .equalgiver:
+   mov rbx, 10
+   mov [forequalparity], rbx
+   jmp .Criteria
+   .lowgiver:
+   mov rbx, 9
+   mov [forlowparity], rbx
+   jmp .Criteria
+   
+   
+   
+   
+   
+   
+   ;-------------------------
+        
+        ;CRITERIA
+        .Criteria:
+        cmp [oddparitycomparison], [foroddparity]
+        jg .second
+        
+        .second:
+        cmp [evenparitycomparison], [forevenparity]
+        jg .third
+        
+        .third:
+        cmp [highparitycomparison], [forhighparity]
+        jg .fourth
+        
+        .fourth:
+        cmp [evenparitycomparison], [forevenparity]
+        je .fifth
+        
+        .fifth:
+        cmp [lowparitycomparison], [forlowparity]
+        
+        
+       
+        
+
+        
+        .Finish:
+        xor ecx, ecx
+        call ExitProcess
+        
+        
+        
+        
+        
+      
+    
+    
