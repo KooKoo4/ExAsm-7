@@ -7,7 +7,7 @@ extern WriteFile
 extern ExitProcess
 
 section .data
-number dq 49
+number dq 172
 mastercard dq 50
 
 odd db 'Odd number, ', 0
@@ -16,15 +16,10 @@ msg_len3 equ $ -odd
 even db 'Even number, ', 0
 msg_len4 equ $ -even
 
-nmcmsg db 'Access Denied ', 0
+nmcmsg db ', Access Denied, ', 0
 msg_len2 equ $ -nmcmsg
 
-mcmsg db 'Access Granted ', 0
-
-oddstor db 'is odd',
-
-
-
+mcmsg db ', Access Granted, ', 0
 
 msg_len equ $ -mcmsg
 
@@ -34,25 +29,15 @@ newvaluehigh dq 0
 newvalueequal dq 0
 newvaluelow dq 0
 
-foroddparity dq 0
-forevenparity dq 0
-forhighvalue dq 0
-forequalvalue dq 0
-forlowvalue dq 0
-
-oddparitycomparison db 5
-evenparitycomparison db 5
-highvaluecomparison db 10
-equalvaluecomparison db 10
-lowvaluecomparison db  10
-
-valuecomparison db 50
+higheven dq 122
+equaleven dq 72
+loweven dq 22
+highodd dq 111
+equalodd dq 61
+lowodd dq 11
 
 section .bss
 bytes_written resq 1
-
-
-
 
 
 section .text
@@ -75,6 +60,8 @@ main:
         jmp .even
         
         .odd:
+        mov qword [newvalueodd], 0
+        xor rax, rax
         mov ecx, -11
         call GetStdHandle
         mov rbx, rax
@@ -88,6 +75,8 @@ main:
         jmp .oddstor
         
         .even:
+        mov qword [newvalueeven], 0
+        xor rax, rax
         mov ecx, -11
         call GetStdHandle
         mov rbx, rax
@@ -131,90 +120,116 @@ main:
         
         
         .High:
+        mov qword [newvaluehigh], 0
+        xor rax, rax
             mov rax, 100
             mov [newvaluehigh], rax
             PRINT_DEC 8, [newvaluehigh]
-            jmp .CriteriaGiver
+            jmp .Criteria
             
     
         
         .Equal:
+        mov qword [newvalueequal], 0
+        xor rax, rax
             mov rax, 50
             mov [newvalueequal], rax
         PRINT_DEC 8, [newvalueequal]
-            jmp .CriteriaGiver
+            jmp .Criteria
        
         
         
         
         .Low:
+        mov qword [newvaluelow], 0
+        xor rax, rax
             mov rax, 0
             mov [newvaluelow], rax
         PRINT_DEC 8, [newvaluelow]
-        jmp .CriteriaGiver
+        jmp .Criteria
         
    ;-----------------------
     
-   ;CriteriaGiver
-   
-   .CriteriaGiver:
-   jmp .oddgiver
-   
-   .oddgiver:
-   mov rbx, 4
-   mov [foroddparity], rbx
-   PRINT_DEC 8, [foroddparity]
-   jmp .Criteria
-   .evengiver:
-   mov rbx, 6
-   mov [forevenparity], rbx
-   jmp .Criteria
-   .highgiver:
-   mov rbx, 15
-   mov [forhighparity], rbx
-   jmp .Criteria
-   .equalgiver:
-   mov rbx, 10
-   mov [forequalparity], rbx
-   jmp .Criteria
-   .lowgiver:
-   mov rbx, 9
-   mov [forlowparity], rbx
-   jmp .Criteria
-   
-   
-   
-   
-   
-   
-   ;-------------------------
         
         ;CRITERIA
         .Criteria:
-        cmp [oddparitycomparison], [foroddparity]
-        jg .second
-        
-        .second:
-        cmp [evenparitycomparison], [forevenparity]
-        jg .third
-        
-        .third:
-        cmp [highparitycomparison], [forhighparity]
-        jg .fourth
-        
-        .fourth:
-        cmp [evenparitycomparison], [forevenparity]
-        je .fifth
-        
-        .fifth:
-        cmp [lowparitycomparison], [forlowparity]
-        
-        
+        mov rax, [newvaluehigh]
+        mov rbx, [newvalueeven]
+        add rax, rbx
+        cmp rax, [higheven]
+        je .ACCESSGRANTED
+        jmp .2
+        .2:
+        mov rax, [newvalueequal]
+        mov rbx, [newvalueeven]
+        add rax, rbx
+        cmp rax, [equaleven]
+        je .ACCESSGRANTED
+        jmp .3
+        .3:
+        mov rax, [newvaluelow]
+        mov rbx, [newvalueeven]
+        add rax, rbx
+        cmp rax, [loweven]
+        je .ACCESSDENIED
+        jmp .4
+        .4:
+        mov rax, [newvaluehigh]
+        mov rbx, [newvalueodd]
+        add rax, rbx
+        cmp rax, [highodd]
+        je .ACCESSDENIED
+        jmp .5
+        .5:
+        mov rax, [newvalueequal]
+        mov rbx, [newvalueodd]
+        add rax, rbx
+        cmp rax, [equalodd]
+        je .ACCESSDENIED
+        jmp .6
+        .6:
+        mov rax, [newvaluelow]
+        mov rbx, [newvalueodd]
+        add rax, rbx
+        cmp rax, [lowodd]
+        jz .ACCESSDENIED
+        jmp .ACCESSDENIED
+
        
         
 
         
-        .Finish:
+        
+        
+        .ACCESSGRANTED:
+
+        mov ecx, -11
+        call GetStdHandle
+        mov rbx, rax
+        mov rcx, rbx
+        lea rdx, [mcmsg]
+        mov r8, msg_len
+        lea r9, [bytes_written]
+        mov qword [rsp + 32], 0
+        call WriteFile
+        jmp .FINISH
+        
+        
+        .ACCESSDENIED:
+
+        mov ecx, -11
+        call GetStdHandle
+        mov rbx, rax
+        mov rcx, rbx
+        lea rdx, [nmcmsg]
+        mov r8, msg_len2
+        lea r9, [bytes_written]
+        mov qword [rsp + 32], 0
+        call WriteFile
+        jmp .FINISH
+        
+        
+        .FINISH:
         xor ecx, ecx
         call ExitProcess
         
